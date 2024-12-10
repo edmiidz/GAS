@@ -1,4 +1,4 @@
-function organizeFilesByYear() {
+function organizeFilesByYearAndDate() {
   try {
     // Get the current spreadsheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
@@ -15,6 +15,7 @@ function organizeFilesByYear() {
       const fileName = file.getName();
       const creationDate = file.getDateCreated();
       const year = creationDate.getFullYear().toString();
+      const dateFolderName = creationDate.toISOString().split('T')[0]; // YYYY-MM-DD
       const fileUrl = file.getUrl();
 
       // Explicitly check if the file is truly in the root folder
@@ -34,7 +35,7 @@ function organizeFilesByYear() {
         continue; // Skip files not directly in the root folder
       }
 
-      // Get or create a folder for the year
+      // Get or create the year folder
       let yearFolder = null;
       const yearFolders = rootFolder.getFoldersByName(year);
 
@@ -44,12 +45,22 @@ function organizeFilesByYear() {
         yearFolder = rootFolder.createFolder(year);
       }
 
+      // Get or create the date folder within the year folder
+      let dateFolder = null;
+      const dateFolders = yearFolder.getFoldersByName(dateFolderName);
+
+      if (dateFolders.hasNext()) {
+        dateFolder = dateFolders.next();
+      } else {
+        dateFolder = yearFolder.createFolder(dateFolderName);
+      }
+
       // Move the file to the appropriate folder
       try {
-        file.moveTo(yearFolder);
-     //   Logger.log(`Moved file: ${fileName} to folder: ${year}`);
+        file.moveTo(dateFolder);
+        Logger.log(`Moved file: ${fileName} to folder: ${year}/${dateFolderName}`);
         // Log the file details into the spreadsheet
-        sheet.appendRow([fileName, creationDate, fileUrl, yearFolder.getName()]);
+        sheet.appendRow([fileName, creationDate, fileUrl, `${year}/${dateFolderName}`]);
       } catch (error) {
         Logger.log(`Error moving file: ${fileName}. Error: ${error.message}`);
       }
